@@ -1,0 +1,30 @@
+version: '3'
+
+networks:
+  polls-net:
+    driver: bridge
+
+services:
+
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data:/data
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    command: redis-server --appendonly yes
+    networks:
+      - polls-net
+
+  go-server:
+    build: ./go-server
+    ports:
+      - "8080:8090"
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    depends_on:
+      - redis
+    networks:
+      - polls-net
