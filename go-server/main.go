@@ -20,9 +20,13 @@ func main() {
 		DB:       0,        // use default DB
 	})
 
-	fmt.Println("Redis credential: ", password)
 	pong, err := client.Ping().Result()
 	fmt.Println(pong, err)
+
+	// client.Set("testKey", "hello", 0)
+	got := client.Get("anotherKey")
+
+	fmt.Println(got.Val())
 
 	handler := handlers.CreatePollsHandler(client)
 

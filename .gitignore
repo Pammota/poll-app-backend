@@ -1,3 +1,5 @@
 .github/*
 .env
 data
+z_init
+z_scripts/*

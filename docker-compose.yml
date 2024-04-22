@@ -7,14 +7,15 @@ networks:
 services:
 
   redis:
-    image: redis
+    image: redis:latest
     ports:
       - "6379:6379"
     volumes:
       - ./data:/data
+      - ./redis.conf:/etc/redis/redis.conf
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
-    command: redis-server --appendonly yes
+    command: ["redis-server", "/etc/redis/redis.conf" ,"--requirepass \"$REDIS_PASSWORD\""]
     networks:
       - polls-net
 
