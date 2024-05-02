@@ -23,7 +23,6 @@ func main() {
 	pong, err := client.Ping().Result()
 	fmt.Println(pong, err)
 
-	// client.Set("testKey", "hello", 0)
 	got := client.Get("anotherKey")
 
 	fmt.Println(got.Val())
