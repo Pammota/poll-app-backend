@@ -1,0 +1,79 @@
+name: Docker Image CI/CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v4
+        with:
+          context: ./go-server
+          push: true
+          platforms: linux/arm64
+          tags: ${{ secrets.DOCKER_HUB_REPOSITORY }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass curl
+          curl -L https://github.com/cloudflare/cloudflared/releases/download/2023.7.3/cloudflared-linux-amd64 -o cloudflared
+          sudo mv cloudflared /usr/bin/
+          sudo chmod +x /usr/bin/cloudflared
+          sudo mkdir -p /root/.ssh
+
+      - name: Copy and set permissions for script
+        env:
+          SH_SCRIPT: |
+            #!/bin/bash
+            echo "Host $1" >> /root/.ssh/config
+            echo "ProxyCommand cloudflared access ssh --hostname %h" >> /root/.ssh/config
+            ssh-keyscan $1 >> /root/.ssh/known_hosts
+            # Use sshpass to pass the password to ssh
+            sshpass -p "$4" ssh -o StrictHostKeyChecking=no $3@$1
+            # Use sshpass to pass the password to ssh and execute the command
+            sshpass -p "$4" ssh -o StrictHostKeyChecking=no $3@$1 -p $2 "$5"
+        run: |
+          touch cloudflared_ssh.sh
+          echo "$SH_SCRIPT" > cloudflared_ssh.sh
+          chmod +x cloudflared_ssh.sh
+
+      - name: Cloudflared SSH Deploy
+        env:
+          DIETPI_IP: ${{ secrets.DIETPI_IP }}
+          DIETPI_USER: ${{ secrets.DIETPI_USER }}
+          DIETPI_PASSWORD: ${{ secrets.DIETPI_PASSWORD }}
+          SSH_SCRIPT: |
+            # Stop and remove old container
+            docker stop polls_container
+            docker rm polls_container
+
+            # Pull new image
+            docker pull ${{ secrets.DOCKER_HUB_REPOSITORY }}
+
+            # Run new container
+            docker run -d --name polls_container -p 8090:8090 ${{ secrets.DOCKER_HUB_REPOSITORY }}
+        run: |
+          sudo ./cloudflared_ssh.sh $DIETPI_IP 22 $DIETPI_USER "$DIETPI_PASSWORD" "$SSH_SCRIPT"
