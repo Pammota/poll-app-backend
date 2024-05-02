@@ -13,7 +13,6 @@ import (
 
 func main() {
 	password := os.Getenv("REDIS_PASSWORD")
-	// password := "redditpassword"
 
 	client := redis.NewClient(&redis.Options{
 		Addr:     "redis:6379",
