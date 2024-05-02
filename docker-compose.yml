@@ -22,7 +22,7 @@ services:
   go-server:
     build: ./go-server
     ports:
-      - "8080:8090"
+      - "8090:8090"
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     depends_on:
