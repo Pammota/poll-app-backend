@@ -270,69 +270,128 @@ func (handler PollsHandler) Vote(ctx *gin.Context) {
 		return
 	}
 
-	if vote.Option == "" {
-		ctx.JSON(400, gin.H{"error": "An option is required."})
-		return
-	} else {
-		// code to check if the option exists in the poll
-		optionExists, err := doesOptionExist(handler.RedisClient, vote.PollID, vote.Option)
+	if !vote.HasMultiple {
+		if vote.Option == "" {
+			ctx.JSON(400, gin.H{"error": "An option is required."})
+			return
+		} else {
+			// code to check if the option exists in the poll
+			optionExists, err := doesOptionExist(handler.RedisClient, vote.PollID, vote.Option)
+			if err != nil {
+				ctx.JSON(500, gin.H{"error": err.Error()})
+				return
+			}
+
+			if !optionExists {
+				ctx.JSON(400, gin.H{"error": "Option does not exist in the poll."})
+				return
+			}
+
+			// code to check if the user has already voted
+			userHasVoted, err := hasUserVoted(handler.RedisClient, vote.PollID, vote)
+			if err != nil {
+				ctx.JSON(500, gin.H{"error": err.Error()})
+				return
+			}
+
+			if userHasVoted {
+				ctx.JSON(400, gin.H{"error": "You have already voted!"})
+				return
+			}
+
+			// code to check if the poll is still open
+			pollEnded, err := hasPollEnded(handler.RedisClient, vote.PollID)
+			if err != nil {
+				ctx.JSON(500, gin.H{"error": err.Error()})
+				return
+			}
+
+			if pollEnded {
+				ctx.JSON(400, gin.H{"error": "Poll is closed."})
+				return
+			}
+
+			// increase vote
+			err = increaseOptionVotes(handler.RedisClient, vote.PollID, vote.Option)
+
+			if err != nil {
+				ctx.JSON(500, gin.H{"error": err.Error()})
+				return
+			}
+
+		}
+
+		voteJSON, err := json.Marshal(vote)
 		if err != nil {
 			ctx.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
 
-		if !optionExists {
-			ctx.JSON(400, gin.H{"error": "Option does not exist in the poll."})
+		err = handler.RedisClient.Set("vote:"+vote.ID, voteJSON, 0).Err()
+		if err != nil {
+			ctx.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
 
+		ctx.JSON(201, gin.H{"id": vote.ID})
+
+	} else {
+		for _, option := range vote.Options {
+			// code to check if the option exists in the poll
+			optionExists, err := doesOptionExist(handler.RedisClient, vote.PollID, option)
+			if err != nil {
+				ctx.JSON(500, gin.H{"error": err.Error()})
+				return
+			}
+			if !optionExists {
+				ctx.JSON(400, gin.H{"error": "Option does not exist in the poll."})
+				return
+			}
+		}
 		// code to check if the user has already voted
 		userHasVoted, err := hasUserVoted(handler.RedisClient, vote.PollID, vote)
 		if err != nil {
 			ctx.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
-
 		if userHasVoted {
-			ctx.JSON(400, gin.H{"error": "You have already voted!"})
+			ctx.JSON(400, gin.H{"error": "You have already voted for one or more options!"})
 			return
 		}
-
 		// code to check if the poll is still open
 		pollEnded, err := hasPollEnded(handler.RedisClient, vote.PollID)
 		if err != nil {
 			ctx.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
-
 		if pollEnded {
 			ctx.JSON(400, gin.H{"error": "Poll is closed."})
 			return
 		}
 
-		// increase vote
-		err = increaseOptionVotes(handler.RedisClient, vote.PollID, vote.Option)
+		// increase votes for each option
+		for _, option := range vote.Options {
+			err = increaseOptionVotes(handler.RedisClient, vote.PollID, option)
+			if err != nil {
+				ctx.JSON(500, gin.H{"error": err.Error()})
+				return
+			}
+		}
 
+		voteJSON, err := json.Marshal(vote)
 		if err != nil {
 			ctx.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
 
-	}
+		err = handler.RedisClient.Set("vote:"+vote.ID, voteJSON, 0).Err()
+		if err != nil {
+			ctx.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
 
-	voteJSON, err := json.Marshal(vote)
-	if err != nil {
-		ctx.JSON(500, gin.H{"error": err.Error()})
-		return
+		ctx.JSON(201, gin.H{"id": vote.ID})
 	}
-
-	err = handler.RedisClient.Set("vote:"+vote.ID, voteJSON, 0).Err()
-	if err != nil {
-		ctx.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-
-	ctx.JSON(201, gin.H{"id": vote.ID})
 }
 
 func (handler PollsHandler) GetVotesByPollId(ctx *gin.Context) {

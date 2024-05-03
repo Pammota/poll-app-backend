@@ -1,11 +1,13 @@
 package models
 
 type Vote struct {
-	ID                    string `json:"id"`
-	PollID                string `json:"poll_id"`
-	UserIP                string `json:"user_ip"`
-	UserUniqueBrowserHash string `json:"user_unique_browser_hash"`
-	Option                string `json:"option"`
+	ID                    string   `json:"id"`
+	PollID                string   `json:"poll_id"`
+	UserIP                string   `json:"user_ip"`
+	UserUniqueBrowserHash string   `json:"user_unique_browser_hash"`
+	HasMultiple           bool     `json:"has_multiple"`
+	Option                string   `json:"option"`
+	Options               []string `json:"options"`
 }
 
 type Options struct {
