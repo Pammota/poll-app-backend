@@ -59,7 +59,7 @@ func main() {
 	// Vote use cases
 	router.POST("/polls/:id/vote", handler.Vote)
 	router.GET("/polls/:id/votes", handler.GetVotesByPollId)
-	router.GET("/polls/:id/votes/:client_ubh", handler.HasUserVoted)
+	router.GET("/polls/:poll_id/votes/:client_ubh", handler.HasUserVoted)
 
 	router.Run("0.0.0.0:8090")
 }
