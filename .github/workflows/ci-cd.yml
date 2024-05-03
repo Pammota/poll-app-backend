@@ -75,5 +75,6 @@ jobs:
 
             # Run new container
             docker run -d --name polls_container -p 8090:8090 --env REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }} ${{ secrets.DOCKER_HUB_REPOSITORY }}
+            docker network connect redis_polls-net polls_container
         run: |
           sudo ./cloudflared_ssh.sh $DIETPI_IP 22 $DIETPI_USER "$DIETPI_PASSWORD" "$SSH_SCRIPT"
