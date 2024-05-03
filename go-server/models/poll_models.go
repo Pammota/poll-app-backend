@@ -22,7 +22,6 @@ type Poll struct {
 	Slug                    string    `json:"slug"`
 	Author                  string    `json:"author"`
 	AuthorUniqueBrowserHash string    `json:"author_unique_browser_hash"`
-	AdminPassword           string    `json:"admin_password"`
 	StartDate               string    `json:"start_date"`
 	EndDate                 string    `json:"end_date"`
 	AllowMultiple           bool      `json:"allow_multiple"`
