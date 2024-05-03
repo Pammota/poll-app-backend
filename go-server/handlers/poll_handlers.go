@@ -348,7 +348,7 @@ func (handler PollsHandler) GetVotesByPollId(ctx *gin.Context) {
 }
 
 func (handler PollsHandler) HasUserVoted(ctx *gin.Context) {
-	pollID := ctx.Param("poll_id")
+	pollID := ctx.Param("id")
 	clientUBH := ctx.Param("client_ubh")
 	userIP := ctx.ClientIP()
 
