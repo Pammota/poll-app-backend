@@ -409,7 +409,7 @@ func (handler PollsHandler) GetVotesByPollId(ctx *gin.Context) {
 func (handler PollsHandler) HasUserVoted(ctx *gin.Context) {
 	pollID := ctx.Param("id")
 	clientUBH := ctx.Param("client_ubh")
-	userIP := ctx.ClientIP()
+	// userIP := ctx.ClientIP()
 
 	votes, err := getVotesByPollId(handler.RedisClient, pollID)
 	if err != nil {
@@ -418,7 +418,7 @@ func (handler PollsHandler) HasUserVoted(ctx *gin.Context) {
 	}
 
 	for _, vote := range votes {
-		if vote.UserIP == userIP && vote.UserUniqueBrowserHash == clientUBH {
+		if vote.UserUniqueBrowserHash == clientUBH {
 			ctx.JSON(200, gin.H{"voted": true})
 			return
 		}
@@ -462,7 +462,7 @@ func hasUserVoted(rdb *redis.Client, pollID string, vote Vote) (bool, error) {
 	}
 
 	for _, v := range votes {
-		if v.UserIP == vote.UserIP && v.UserUniqueBrowserHash == vote.UserUniqueBrowserHash {
+		if v.UserUniqueBrowserHash == vote.UserUniqueBrowserHash {
 			return true, nil
 		}
 	}
